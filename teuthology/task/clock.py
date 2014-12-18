@@ -4,9 +4,12 @@ Clock synchronizer
 import logging
 import contextlib
 
+from . import packaging
 from ..orchestra import run
 
 log = logging.getLogger(__name__)
+REQUIRED_PKGS = ('ntp', 'ntpdate')
+
 
 @contextlib.contextmanager
 def task(ctx, config):
@@ -31,6 +34,8 @@ def task(ctx, config):
 
     log.info('Syncing clocks and checking initial clock skew...')
     for rem in ctx.cluster.remotes.iterkeys():
+        for pkg in REQUIRED_PKGS:
+            packaging.install_package(pkg, rem)
         rem.run(
             args=[
                 'sudo',
