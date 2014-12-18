@@ -57,6 +57,7 @@ def main(args):
     timeout = args['--timeout']
     filter_in = args['--filter']
     filter_out = args['--filter-out']
+    no_chef = args['--no-chef']
 
     name = make_run_name(suite, ceph_branch, kernel_branch, kernel_flavor,
                          machine_type)
@@ -64,7 +65,7 @@ def main(args):
     job_config = create_initial_config(suite, suite_branch, ceph_branch,
                                        teuthology_branch, kernel_branch,
                                        kernel_flavor, distro, machine_type,
-                                       name)
+                                       name, no_chef)
 
     if suite_dir:
         suite_repo_path = suite_dir
@@ -151,7 +152,7 @@ def fetch_repos(branch, test_name):
 
 def create_initial_config(suite, suite_branch, ceph_branch, teuthology_branch,
                           kernel_branch, kernel_flavor, distro, machine_type,
-                          name=None):
+                          name=None, no_chef=False):
     """
     Put together the config file used as the basis for each job in the run.
     Grabs hashes for the latest ceph, kernel and teuthology versions in the
@@ -233,6 +234,9 @@ def create_initial_config(suite, suite_branch, ceph_branch, teuthology_branch,
     )
     conf_dict = substitute_placeholders(dict_templ, config_input)
     conf_dict.update(kernel_dict)
+    if no_chef:
+        conf_dict['tasks'] = [tdict for tdict in conf_dict['tasks']
+                              if 'chef' not in tdict]
     job_config = JobConfig.from_dict(conf_dict)
     return job_config
 

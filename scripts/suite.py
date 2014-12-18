@@ -48,6 +48,7 @@ Standard arguments:
                               <suite_branch> to be ignored for scheduling
                               purposes, but it will still be used for test
                               running.
+  --no-chef                   Don't automatically add the 'chef' task
 
 Scheduler arguments:
   --owner <owner>             Job owner
