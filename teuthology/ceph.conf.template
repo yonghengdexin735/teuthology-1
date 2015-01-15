@@ -41,6 +41,8 @@
 
 	osd map max advance = 10
 
+        journal zero on create = true
+
 [mon]
 	debug ms = 1
 	debug mon = 20
