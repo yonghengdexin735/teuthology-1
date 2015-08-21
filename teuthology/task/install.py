@@ -1037,6 +1037,40 @@ ceph_deploy_upgrade.__doc__ = docstring_for_upgrade.format(
         cmd_parameter='ceph_deploy_upgrade')
 
 @contextlib.contextmanager
+def setup_repo(ctx, repo_urls):
+    """
+     Setup repo if config provides repo and backup existing repo
+    :param ctx: Context
+    :param repo: repo to setup
+    """
+    
+    assert isinstance(repo_urls, list), \
+        "repo urls should be a list item"
+    for remote in ctx.cluster.remotes.iterkeys():
+        if remote.os.name == 'rhel':
+            log.info("Disable existing repo's on %s", remote.shortname)
+            remote.run(args=['mkdir', 'repobackup'], check_status=False)
+            remote.run(args=['sudo', 'mv', run.Raw('/etc/yum.repos.d/*'), run.Raw('~/repobackup')])
+            remote.run(args=['sudo', 'yum', 'clean', 'metadata'], check_status=False)
+            for repo_url in repo_urls:
+                log.info("Enabling repo %s", repo_url)
+                remote.run(args=['sudo', 'yum-config-manager' , '--add-repo',repo_url])
+            remote.run(args=['sudo', 'yum', 'clean', 'metadata'])
+            
+    try:
+       yield
+    finally:
+        log.info("Restore Repo")
+        for remote in ctx.cluster.remotes.iterkeys():
+            if remote.os.name == 'rhel':
+                log.info("Remove the added repo on %s", remote.shortname)
+                remote.run(args=['sudo', 'rm', run.Raw('/etc/yum.repos.d/*'),])
+                log.info("Restore Repo on %s", remote.shortname)
+                remote.run(args=['sudo', 'mv',  run.Raw('~/repobackup/*') , run.Raw('/etc/yum.repos.d/')])
+                remote.run(args=['sudo', 'yum', 'clean', 'metadata'])
+                remote.run(args=['rmdir', run.Raw('~/repobackup')])
+
+@contextlib.contextmanager
 def ship_utilities(ctx, config):
     """
     Write a copy of valgrind.supp to each of the remote sites.  Set executables used
@@ -1162,11 +1196,6 @@ def task(ctx, config):
     assert isinstance(config, dict), \
         "task install only supports a dictionary for configuration"
 
-    rhbuild = None
-    if config.get('rhbuild'):
-        rhbuild = config.get('rhbuild')
-        log.info("Build is %s " % rhbuild)
-
     project, = config.get('project', 'ceph'),
     log.debug('project %s' % project)
     overrides = ctx.config.get('overrides')
@@ -1179,13 +1208,27 @@ def task(ctx, config):
     log.info("Using flavor: %s", flavor)
 
     ctx.summary['flavor'] = flavor
+    
+    rhbuild = None
+    if config.get('rhbuild'):
+        rhbuild = config.get('rhbuild')
+        log.info("Build is %s " % rhbuild)
 
     if config.get('rhbuild'):
-        with contextutil.nested(
-            lambda: rh_install(ctx=ctx, config=config),
-            lambda: ship_utilities(ctx=ctx, config=None)
-        ):
-            yield
+        if config.get('repo_urls'):
+            repo_urls=config.get('repo_urls')
+            with contextutil.nested(
+                lambda: setup_repo(ctx=ctx, repo_urls=repo_urls),
+                lambda: rh_install(ctx=ctx, config=config),
+                lambda: ship_utilities(ctx=ctx, config=None),
+                ):
+                yield
+        else:
+            with contextutil.nested(
+                lambda: rh_install(ctx=ctx, config=config),
+                lambda: ship_utilities(ctx=ctx, config=None)
+                ):
+                yield
     else:
         with contextutil.nested(
             lambda: install(ctx=ctx, config=dict(
