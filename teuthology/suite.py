@@ -1020,11 +1020,6 @@ dict_templ = {
                 }
             }
         },
-        'install': {
-            'ceph': {
-                'sha1': Placeholder('ceph_hash'),
-            }
-        },
         'workunit': {
             'sha1': Placeholder('ceph_hash'),
         }
