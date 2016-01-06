@@ -715,7 +715,7 @@ def rh_install(ctx, config):
     :param config: the config dict
     """
     version = config['rhbuild']
-    rh_versions = ['1.3.0', '1.3.1']
+    rh_versions = ['1.3.0', '1.3.1', '1.3.2']
     if version in rh_versions:
         log.info("%s is a supported version", version)
     else:
