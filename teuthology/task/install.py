@@ -788,6 +788,8 @@ def rh_install_pkgs(ctx, remote, installed_version):
     if r.stdout.getvalue().find('ceph') == -1:
         log.info("Install ceph using ceph-deploy on %s", remote.shortname)
         remote.run(args=['sudo', 'ceph-deploy', 'install', run.Raw('--no-adjust-repos'), host])
+        log.info("Install ceph-selinux on %s", remote.shortname)
+        remote.run(args=['sudo', 'ceph-deploy', 'pkg', '--install', 'ceph-selinux', host])
         remote.run(args=['sudo', 'yum', 'install', 'ceph-test', '-y'])
     else:
         log.info("Removing and reinstalling Ceph on %s", remote.shortname)
@@ -795,6 +797,7 @@ def rh_install_pkgs(ctx, remote, installed_version):
         remote.run(args=['sudo', 'ceph-deploy', 'purgedata', host])
         remote.run(args=['sudo', 'ceph-deploy', 'install', host])
         remote.run(args=['sudo', 'yum', 'remove', 'ceph-test', '-y'])
+        remote.run(args=['sudo', 'yum', 'remove', 'ceph-selinux', '-y'])
         remote.run(args=['sudo', 'yum', 'install', 'ceph-test', '-y'])
 
     # check package version
@@ -821,6 +824,7 @@ def rh_uninstall_pkgs(ctx, remote):
     remote.run(args=['sudo', 'ceph-deploy', 'purgedata', host])
     log.info("Uninstalling ceph-deploy")
     remote.run(args=['sudo', 'yum', 'remove', 'ceph-deploy', '-y'], check_status=False)
+    remote.run(args=['sudo', 'yum', 'remove', 'ceph-selinux', '-y'], check_status=False)
     remote.run(args=['sudo', 'yum', 'remove', 'ceph-test', '-y'], check_status=False)
 
 
