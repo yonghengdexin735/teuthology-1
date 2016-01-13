@@ -89,7 +89,7 @@ class SELinux(Task):
         Look for denials in the audit log
         """
         all_denials = dict()
-        ignore_known_denials = '\'\(' + '\'comm="dmidecode"\''
+        ignore_known_denials = '\'\(' + 'comm="dmidecode"'
         # Refer bz953133 for the dmidecode issue
         ignore_known_denials = ignore_known_denials + '\|' + 'chronyd.service' + '\)\''
         # Refer tracker 14244 for chronyd issue
